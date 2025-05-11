@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Advanced People Counter</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="style.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    </head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Advanced People Counter</h1>
+            <p>Track and analyze foot traffic in real-time</p>
+            <div class="theme-switch" id="theme-toggle" role="button" aria-label="Switch to dark mode">
+                <i class="fas fa-moon"></i>
+            </div>
+        </header>
+        
+        <div class="counter-section">
+            <div class="counter-box">
+                <span id="counter" aria-live="polite">0</span>
+            </div>
+            
+            <div class="trending">
+                <span class="icon"><i class="fas fa-arrow-up up" aria-hidden="true"></i></span>
+                <span id="trend-text">No trend data available</span>
+            </div>
+            
+            <div class="buttons">
+                <button class="btn btn-primary" id="increment-btn" aria-label="Add one person">
+                    <i class="fas fa-plus" aria-hidden="true"></i> Add Person
+                    <span class="tooltip">Shortcut: +</span>
+                </button>
+                <button class="btn btn-danger" id="decrement-btn" aria-label="Remove one person">
+                    <i class="fas fa-minus" aria-hidden="true"></i> Remove Person
+                    <span class="tooltip">Shortcut: -</span>
+                </button>
+                <button class="btn btn-success" id="save-btn" aria-label="Save current count">
+                    <i class="fas fa-save" aria-hidden="true"></i> Save Count
+                    <span class="tooltip">Shortcut: S</span>
+                </button>
+                <button class="btn btn-danger" id="reset-btn" aria-label="Reset counter to zero">
+                    <i class="fas fa-trash" aria-hidden="true"></i> Reset
+                </button>
+                <button class="btn btn-primary" id="undo-btn" aria-label="Undo last action">
+                    <i class="fas fa-undo" aria-hidden="true"></i> Undo
+                    <span class="tooltip">Shortcut: Ctrl+Z</span>
+                </button>
+                <button class="btn btn-success" id="export-btn" aria-label="Export data">
+                    <i class="fas fa-download" aria-hidden="true"></i> Export
+                </button>
+                <label class="btn btn-primary" aria-label="Import data">
+                    <i class="fas fa-upload" aria-hidden="true"></i> Import
+                    <input type="file" id="import-btn" accept=".json" style="display: none;">
+                </label>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-count">0</div>
+                    <div class="stat-label">Average Count</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="max-count">0</div>
+                    <div class="stat-label">Peak Count</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-entries">0</div>
+                    <div class="stat-label">Total Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="hourly-trend">0</div>
+                    <div class="stat-label">Hourly Change</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart" id="chart" role="img" aria-label="Chart showing recent count trends"></div>
+            </div>
+        </div>
+        
+        <div class="entries-section">
+            <div class="entries-header">
+                <h2>Entry History</h2>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search entries..." aria-label="Search entry history">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                </div>
+            </div>
+            
+            <div class="entries" id="entries" aria-live="polite"></div>
+        </div>
+        
+        <footer>
+            <p>Advanced People Counter v2.2 | Last updated: <span id="current-date"></span></p>
+        </footer>
+    </div>
+    
+    <!-- Note Modal -->
+    <div class="modal" id="note-modal" role="dialog" aria-labelledby="note-modal-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="note-modal-title">Edit Entry Note</h2>
+                <button class="close-btn" aria-label="Close note modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Entry: <span id="note-modal-entry"></span></p>
+                <textarea id="note-modal-text" placeholder="Enter note..." aria-label="Entry note"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="note-modal-cancel">Cancel</button>
+                <button class="btn btn-success" id="note-modal-save">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Modal -->
+    <div class="modal" id="delete-modal" role="dialog" aria-labelledby="delete-modal-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="delete-modal-title">Confirm Deletion</h2>
+                <button class="close-btn" aria-label="Close delete modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this entry?</p>
+                <p>Entry: <span id="delete-modal-entry"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="delete-modal-cancel">Cancel</button>
+                <button class="btn btn-danger" id="delete-modal-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="script.js"></script>
+</html>
