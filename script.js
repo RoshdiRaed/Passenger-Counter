@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const undoBtn = document.getElementById('undo-btn');
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
+    const cameraToggleBtn = document.getElementById('camera-toggle-btn');
+    const videoEl = document.getElementById('camera-feed');
+    const detectionStatusEl = document.getElementById('detection-status');
     const entriesEl = document.getElementById('entries');
     const themeToggle = document.getElementById('theme-toggle');
     const trendTextEl = document.getElementById('trend-text');
@@ -39,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let actionHistory = [];
     let lastAutoSave = Date.now();
     let currentEntryIndex = null;
+    let isCameraActive = false;
+    let lastDetectionCount = 0;
     
     // Initialize date display
     const now = new Date();
@@ -287,6 +292,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 count = lastAction.oldCount;
                 savedCounts = lastAction.oldSavedCounts;
                 break;
+            case 'auto-detect':
+                count = lastAction.oldCount;
+                savedCounts.pop();
+                break;
         }
         
         updateCounter();
@@ -347,76 +356,67 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Export data
-// Export data (JSON or PDF based on user choice)
-function exportData() {
-    const data = {
-        count: count,
-        savedCounts: savedCounts,
-        exportedAt: new Date().toISOString()
-    };
+    function exportData() {
+        const data = {
+            count: count,
+            savedCounts: savedCounts,
+            exportedAt: new Date().toISOString()
+        };
 
-    // Prompt user to choose export format
-    const format = prompt('Choose export format: Enter "json" for JSON or "pdf" for PDF').toLowerCase();
+        const format = prompt('Choose export format: Enter "json" for JSON or "pdf" for PDF').toLowerCase();
 
-    if (format === 'json') {
-        // Export as JSON
-        const dataStr = JSON.stringify(data, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `people_counter_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
-    } else if (format === 'pdf') {
-        // Export as PDF
-        exportToPDF(data);
-    } else {
-        alert('Invalid format selected. Please choose "json" or "pdf".');
-    }
-}
-
-// Export data to PDF
-function exportToPDF(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Set document properties
-    doc.setFontSize(16);
-    doc.text('Advanced People Counter - Data Export', 20, 20);
-
-    // Current Count
-    doc.setFontSize(12);
-    doc.text(`Current Count: ${data.count}`, 20, 30);
-    doc.text(`Exported At: ${formatDateTime(new Date(data.exportedAt))}`, 20, 40);
-
-    // Statistics
-    const counts = data.savedCounts.map(entry => entry.count);
-    const avg = counts.length > 0 ? counts.reduce((sum, curr) => sum + curr, 0) / counts.length : 0;
-    const max = counts.length > 0 ? Math.max(...counts) : 0;
-    doc.text(`Average Count: ${Math.round(avg * 10) / 10}`, 20, 50);
-    doc.text(`Peak Count: ${max}`, 20, 60);
-    doc.text(`Total Entries: ${counts.length}`, 20, 70);
-
-    // Entry History
-    doc.setFontSize(14);
-    doc.text('Entry History', 20, 90);
-
-    let yPosition = 100;
-    doc.setFontSize(10);
-    data.savedCounts.forEach((entry, index) => {
-        if (yPosition > 270) {
-            doc.addPage();
-            yPosition = 20;
+        if (format === 'json') {
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `people_counter_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } else if (format === 'pdf') {
+            exportToPDF(data);
+        } else {
+            alert('Invalid format selected. Please choose "json" or "pdf".');
         }
-        const entryText = `Entry ${index + 1}: Count: ${entry.count}, Time: ${formatDateTime(new Date(entry.timestamp))}${entry.note ? `, Note: ${entry.note}` : ''}`;
-        doc.text(entryText, 20, yPosition);
-        yPosition += 10;
-    });
+    }
 
-    // Save the PDF
-    doc.save(`people_counter_${new Date().toISOString().split('T')[0]}.pdf`);
-}
+    // Export data to PDF
+    function exportToPDF(data) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFontSize(16);
+        doc.text('Advanced People Counter - Data Export', 20, 20);
+
+        doc.setFontSize(12);
+        doc.text(`Current Count: ${data.count}`, 20, 30);
+        doc.text(`Exported At: ${formatDateTime(new Date(data.exportedAt))}`, 20, 40);
+
+        const counts = data.savedCounts.map(entry => entry.count);
+        const avg = counts.length > 0 ? counts.reduce((sum, curr) => sum + curr, 0) / counts.length : 0;
+        const max = counts.length > 0 ? Math.max(...counts) : 0;
+        doc.text(`Average Count: ${Math.round(avg * 10) / 10}`, 20, 50);
+        doc.text(`Peak Count: ${max}`, 20, 60);
+        doc.text(`Total Entries: ${counts.length}`, 20, 70);
+
+        doc.setFontSize(14);
+        doc.text('Entry History', 20, 90);
+
+        let yPosition = 100;
+        doc.setFontSize(10);
+        data.savedCounts.forEach((entry, index) => {
+            if (yPosition > 270) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            const entryText = `Entry ${index + 1}: Count: ${entry.count}, Time: ${formatDateTime(new Date(entry.timestamp))}${entry.note ? `, Note: ${entry.note}` : ''}`;
+            doc.text(entryText, 20, yPosition);
+            yPosition += 10;
+        });
+
+        doc.save(`people_counter_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
     
     // Import data
     function importData(event) {
@@ -451,11 +451,130 @@ function exportToPDF(data) {
         reader.readAsText(file);
     }
     
+    // Camera and Detection Functions
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+            });
+            videoEl.srcObject = stream;
+            detectionStatusEl.textContent = 'Camera detection: Starting...';
+            detectionStatusEl.classList.remove('error');
+            return stream;
+        } catch (err) {
+            console.error('Camera error:', err);
+            detectionStatusEl.textContent = 'Camera detection: Failed (Check permissions)';
+            detectionStatusEl.classList.add('error');
+            isCameraActive = false;
+            cameraToggleBtn.innerHTML = '<i class="fas fa-camera" aria-hidden="true"></i> Start Camera';
+            cameraToggleBtn.setAttribute('aria-label', 'Start camera detection');
+            alert('Failed to access camera. Please check permissions.');
+            return null;
+        }
+    }
+
+    async function detectPeople() {
+        try {
+            const model = await cocoSsd.load();
+            detectionStatusEl.textContent = 'Camera detection: On';
+            detectionStatusEl.classList.add('active');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+
+            let lastFrameTime = 0;
+            const frameInterval = 1000; // Process one frame per second to reduce CPU load
+
+            async function detectFrame(timestamp) {
+                if (!isCameraActive) return;
+
+                if (timestamp - lastFrameTime < frameInterval) {
+                    requestAnimationFrame(detectFrame);
+                    return;
+                }
+
+                lastFrameTime = timestamp;
+
+                ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                const predictions = await model.detect(canvas);
+                const people = predictions.filter(p => p.class === 'person' && p.score > 0.5); // Confidence threshold
+
+                if (people.length !== lastDetectionCount) {
+                    previousCount = count;
+                    count = people.length;
+                    updateCounter();
+
+                    if (count !== lastDetectionCount) {
+                        actionHistory.push({
+                            type: 'auto-detect',
+                            oldCount: lastDetectionCount
+                        });
+                        savedCounts.push({
+                            count: count,
+                            timestamp: new Date().toISOString(),
+                            note: 'Auto-detected via camera'
+                        });
+                        updateEntries();
+                        updateStats();
+                        updateChart();
+                        saveData();
+                    }
+                    lastDetectionCount = count;
+                }
+
+                requestAnimationFrame(detectFrame);
+            }
+
+            requestAnimationFrame(detectFrame);
+        } catch (err) {
+            console.error('Detection error:', err);
+            detectionStatusEl.textContent = 'Camera detection: Model loading failed';
+            detectionStatusEl.classList.add('error');
+            isCameraActive = false;
+            cameraToggleBtn.innerHTML = '<i class="fas fa-camera" aria-hidden="true"></i> Start Camera';
+            cameraToggleBtn.setAttribute('aria-label', 'Start camera detection');
+            videoEl.style.display = 'none';
+            if (videoEl.srcObject) {
+                videoEl.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+    }
+
+    // Event: Toggle camera detection
+    cameraToggleBtn.addEventListener('click', async () => {
+        isCameraActive = !isCameraActive;
+        cameraToggleBtn.innerHTML = isCameraActive
+            ? '<i class="fas fa-camera" aria-hidden="true"></i> Stop Camera'
+            : '<i class="fas fa-camera" aria-hidden="true"></i> Start Camera';
+        cameraToggleBtn.setAttribute('aria-label', isCameraActive ? 'Stop camera detection' : 'Start camera detection');
+
+        if (isCameraActive) {
+            const stream = await startCamera();
+            if (stream) {
+                videoEl.style.display = 'block';
+                detectPeople();
+            } else {
+                isCameraActive = false;
+                cameraToggleBtn.innerHTML = '<i class="fas fa-camera" aria-hidden="true"></i> Start Camera';
+                cameraToggleBtn.setAttribute('aria-label', 'Start camera detection');
+            }
+        } else {
+            detectionStatusEl.textContent = 'Camera detection: Off';
+            detectionStatusEl.classList.remove('active', 'error');
+            videoEl.style.display = 'none';
+            if (videoEl.srcObject) {
+                videoEl.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+    });
+    
     // Event: Increment counter
     incrementBtn.addEventListener('click', () => {
         actionHistory.push({ type: 'increment' });
         previousCount = count;
         count++;
+        lastDetectionCount = count; // Sync with camera detection
         updateCounter();
         saveData();
     });
@@ -466,6 +585,7 @@ function exportToPDF(data) {
             actionHistory.push({ type: 'decrement' });
             previousCount = count;
             count--;
+            lastDetectionCount = count; // Sync with camera detection
             updateCounter();
             saveData();
         }
@@ -490,6 +610,7 @@ function exportToPDF(data) {
             });
             previousCount = count;
             count = 0;
+            lastDetectionCount = 0;
             savedCounts = [];
             updateCounter();
             updateEntries();
@@ -529,8 +650,12 @@ function exportToPDF(data) {
     });
     
     // Event: Search entries
+    let searchTimeout;
     searchInput.addEventListener('input', () => {
-        updateEntries();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            updateEntries();
+        }, 300);
     });
     
     // Modal Events
@@ -544,7 +669,6 @@ function exportToPDF(data) {
             });
             
             if (currentEntryIndex === savedCounts.length) {
-                // New entry
                 actionHistory.push({ type: 'save' });
                 savedCounts.push({
                     count: count,
@@ -552,7 +676,6 @@ function exportToPDF(data) {
                     note: noteModalText.value.trim() || undefined
                 });
             } else {
-                // Existing entry
                 savedCounts[currentEntryIndex].note = noteModalText.value.trim() || undefined;
             }
             
@@ -611,6 +734,28 @@ function exportToPDF(data) {
         }
     });
     
+    // Trap focus in modals
+    function trapFocus(modal) {
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea');
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        modal.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                if (e.shiftKey && document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        });
+    }
+
+    noteModal.addEventListener('focusin', () => trapFocus(noteModal));
+    deleteModal.addEventListener('focusin', () => trapFocus(deleteModal));
+    
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if (e.target === searchInput || e.target === noteModalText) return;
@@ -635,6 +780,10 @@ function exportToPDF(data) {
             noteModal.style.display = 'none';
             deleteModal.style.display = 'none';
             currentEntryIndex = null;
+            e.preventDefault();
+        }
+        else if (e.key === 'c' || e.key === 'C') {
+            cameraToggleBtn.click();
             e.preventDefault();
         }
     });

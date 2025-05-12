@@ -6,19 +6,23 @@
         <title>Advanced People Counter</title>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
         <link rel="stylesheet" href="style.css">
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     </head>
 <body>
     <div class="container">
         <header>
             <h1>Advanced People Counter</h1>
-            <p>Track and analyze foot traffic in real-time</p>
+            <p>Track and analyze foot traffic in real-time with camera detection</p>
             <div class="theme-switch" id="theme-toggle" role="button" aria-label="Switch to dark mode">
                 <i class="fas fa-moon"></i>
             </div>
         </header>
         
         <div class="counter-section">
+            <video id="camera-feed" autoplay style="display: none;" aria-label="Camera feed for people detection"></video>
+            <div class="detection-status" id="detection-status" aria-live="polite">Camera detection: Off</div>
             <div class="counter-box">
                 <span id="counter" aria-live="polite">0</span>
             </div>
@@ -29,6 +33,9 @@
             </div>
             
             <div class="buttons">
+                <button class="btn btn-primary" id="camera-toggle-btn" aria-label="Start camera detection">
+                    <i class="fas fa-camera" aria-hidden="true"></i> Start Camera
+                </button>
                 <button class="btn btn-primary" id="increment-btn" aria-label="Add one person">
                     <i class="fas fa-plus" aria-hidden="true"></i> Add Person
                     <span class="tooltip">Shortcut: +</span>
@@ -94,7 +101,7 @@
         </div>
         
         <footer>
-            <p>Advanced People Counter v2.2 | Last updated: <span id="current-date"></span></p>
+            <p>Advanced People Counter v2.3 | Last updated: <span id="current-date"></span></p>
         </footer>
     </div>
     
@@ -133,6 +140,7 @@
             </div>
         </div>
     </div>
+    
+    <script src="script.js"></script>
 </body>
-<script src="script.js"></script>
 </html>
